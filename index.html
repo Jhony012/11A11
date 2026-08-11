@@ -9,9 +9,7 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="index.html" aria-label="11 A 11 - início">
-      <span>11</span><b>A</b><span>11</span>
-    </a>
+    <a class="brand" href="index.html" aria-label="11 A 11 - início"><span>11</span><b>A</b><span>11</span></a>
     <nav>
       <a href="#edicao-atual">Edição atual</a>
       <a href="#arquivo">Arquivo</a>
@@ -24,58 +22,34 @@
       <div class="hero-copy">
         <p class="eyebrow">REVISTA SEMANAL DE FUTEBOL</p>
         <h1>O futebol da semana,<br><em>em uma edição.</em></h1>
-        <p class="intro">
-          Notícias, histórias e acontecimentos que merecem mais do que alguns segundos de rolagem.
-        </p>
-        <a class="button" href="edicoes/2026-001.pdf">Ler edição 001 <span>↗</span></a>
+        <p class="intro">Notícias, histórias e acontecimentos que merecem mais do que alguns segundos de rolagem.</p>
+        <a class="button" id="current-link" href="#arquivo">Carregando edição… <span>↗</span></a>
       </div>
 
-      <a class="cover" href="edicoes/2026-001.pdf" aria-label="Abrir Edição 001">
-        <div class="cover-top">11 A 11</div>
-        <div class="cover-number">001</div>
-        <div class="cover-title">BRASIL</div>
-        <div class="cover-line"></div>
-        <div class="cover-bottom">08 AGO 2026</div>
+      <a class="cover" id="current-cover" href="#arquivo" aria-label="Abrir edição atual">
+        <div class="cover-fallback">
+          <div class="cover-top">11 A 11</div>
+          <div class="cover-number" id="current-number">001</div>
+          <div class="cover-title">BRASIL</div>
+          <div class="cover-line"></div>
+          <div class="cover-bottom">2026</div>
+        </div>
       </a>
     </section>
 
     <section class="archive" id="arquivo">
       <div class="section-head">
-        <div>
-          <p class="eyebrow">ARQUIVO</p>
-          <h2>Edições</h2>
-        </div>
+        <div><p class="eyebrow">ARQUIVO</p><h2>Edições</h2></div>
         <span class="section-note">2026</span>
       </div>
-
-      <div class="issue-grid">
-        <a class="issue" href="edicoes/2026-001.pdf">
-          <div class="mini-cover">
-            <span>11 A 11</span>
-            <strong>001</strong>
-            <small>BRASIL</small>
-          </div>
-          <div class="issue-info">
-            <span>Edição 001</span>
-            <small>08 de agosto de 2026</small>
-          </div>
-        </a>
-
-        <!-- Para adicionar uma nova edição, copie o bloco .issue,
-             troque o nome do PDF, número, data e título. -->
+      <div class="issue-grid" id="issue-grid">
+        <p class="loading">Carregando edições…</p>
       </div>
     </section>
 
     <section class="about" id="sobre">
-      <div>
-        <p class="eyebrow">SOBRE O PROJETO</p>
-        <h2>Uma revista feita para ler futebol com calma.</h2>
-      </div>
-      <p>
-        O 11 A 11 é um projeto editorial independente. Cada edição reúne
-        as histórias e notícias que mais chamaram atenção durante a semana,
-        em um formato pensado para ser lido como revista.
-      </p>
+      <div><p class="eyebrow">SOBRE O PROJETO</p><h2>Uma revista feita para ler futebol com calma.</h2></div>
+      <p>O 11 A 11 é um projeto editorial independente. Cada edição reúne as histórias e notícias que mais chamaram atenção durante a semana, em um formato pensado para ser lido como revista.</p>
     </section>
   </main>
 
@@ -83,5 +57,126 @@
     <div class="footer-brand">11 A 11</div>
     <div>Projeto editorial independente · 2026</div>
   </footer>
+
+<script>
+(() => {
+  const OWNER = "Jhony012";
+  const REPO = "11A11";
+  const API = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
+  const RAW = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main`;
+
+  const grid = document.getElementById("issue-grid");
+  const currentLink = document.getElementById("current-link");
+  const currentCover = document.getElementById("current-cover");
+  const currentNumber = document.getElementById("current-number");
+
+  function issueNumber(name) {
+    const match = name.match(/^(?:\d{4}-|\d{4}\.)?(\d{3})\.pdf$/i);
+    return match ? parseInt(match[1], 10) : null;
+  }
+
+  function yearFromName(name) {
+    const match = name.match(/^(\d{4})[-.]/);
+    return match ? match[1] : "2026";
+  }
+
+  function coverCandidates(number) {
+    const n = String(number).padStart(3, "0");
+    return [`assets/capa-${n}.png`, `assets/capa-${n}.jpg`, `assets/capa-${n}.jpeg`, `assets/capa-${n}.webp`];
+  }
+
+  async function getFolder(path) {
+    const response = await fetch(`${API}/${path}`);
+    if (!response.ok) throw new Error(`Não foi possível acessar ${path}`);
+    return response.json();
+  }
+
+  function fallbackCover(number, year) {
+    const el = document.createElement("div");
+    el.className = "mini-cover";
+    el.innerHTML = `<span>11 A 11</span><strong>${String(number).padStart(3, "0")}</strong><small>${year}</small>`;
+    return el;
+  }
+
+  function makeIssueCard(file, coverUrl) {
+    const number = issueNumber(file.name);
+    const year = yearFromName(file.name);
+    const link = document.createElement("a");
+    link.className = "issue";
+    link.href = file.download_url || `${RAW}/edicoes/${encodeURIComponent(file.name)}`;
+    link.target = "_blank";
+    link.rel = "noopener";
+
+    if (coverUrl) {
+      const img = document.createElement("img");
+      img.className = "mini-cover-image";
+      img.src = coverUrl;
+      img.alt = `Capa da edição ${String(number).padStart(3, "0")}`;
+      link.appendChild(img);
+    } else {
+      link.appendChild(fallbackCover(number, year));
+    }
+
+    const info = document.createElement("div");
+    info.className = "issue-info";
+    info.innerHTML = `<span>Edição ${String(number).padStart(3, "0")}</span><small>${year}</small>`;
+    link.appendChild(info);
+    return link;
+  }
+
+  async function findCover(number, assets) {
+    const candidates = coverCandidates(number).map(x => x.toLowerCase());
+    const found = assets.find(item => candidates.includes(item.path.toLowerCase()));
+    return found ? found.download_url : null;
+  }
+
+  async function load() {
+    try {
+      const [editions, assets] = await Promise.all([
+        getFolder("edicoes"),
+        getFolder("assets").catch(() => [])
+      ]);
+
+      const files = editions
+        .filter(item => item.type === "file" && /^\d{4}[-.]\d{3}\.pdf$/i.test(item.name))
+        .map(item => ({ ...item, number: issueNumber(item.name) }))
+        .filter(item => item.number !== null)
+        .sort((a, b) => (b.name.localeCompare(a.name, undefined, {numeric: true})));
+
+      if (!files.length) {
+        grid.innerHTML = '<p class="loading">Nenhuma edição publicada ainda.</p>';
+        currentLink.textContent = "Nenhuma edição disponível";
+        return;
+      }
+
+      const current = files[0];
+      const currentCoverUrl = await findCover(current.number, assets);
+      currentLink.href = current.download_url || `${RAW}/edicoes/${encodeURIComponent(current.name)}`;
+      currentLink.target = "_blank";
+      currentLink.rel = "noopener";
+      currentLink.innerHTML = `Ler edição ${String(current.number).padStart(3, "0")} <span>↗</span>`;
+      currentNumber.textContent = String(current.number).padStart(3, "0");
+
+      if (currentCoverUrl) {
+        currentCover.innerHTML = `<img class="main-cover-image" src="${currentCoverUrl}" alt="Capa da edição ${String(current.number).padStart(3, "0")}">`;
+        currentCover.href = current.download_url;
+        currentCover.target = "_blank";
+        currentCover.rel = "noopener";
+      }
+
+      grid.innerHTML = "";
+      for (const file of files) {
+        const coverUrl = await findCover(file.number, assets);
+        grid.appendChild(makeIssueCard(file, coverUrl));
+      }
+    } catch (error) {
+      console.error(error);
+      grid.innerHTML = '<p class="loading">Não foi possível carregar as edições agora. Tente novamente em alguns segundos.</p>';
+    }
+  }
+
+  load();
+})();
+</script>
 </body>
 </html>
